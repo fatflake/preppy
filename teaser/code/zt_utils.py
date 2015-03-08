@@ -81,21 +81,20 @@ def compute_nearest_point(new_point, slope, y_int):
     nearest_point = [x_nearest, y_nearest]
     return nearest_point
 
-#def compute_spree_prob():
+#def compute_spree_prob(): # FIXME
 
-#def compute_gate_prob():    # FIXME
+def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):  
+    dist = new_point - gate_point 
+    ### FIXME XXX need log normal
+    prob_of_new_point = gauss_pdf(dist, mean_gate, sigma_gate)
+    return prob_of_new_point
 
 
-def compute_satt_prob(new_point, sigma_satt):    # FIXME
+def compute_satt_prob(new_point, sigma_satt): 
     mean_satt = 0.
-
-    # compute equation of line
     slope, y_int = compute_line(SATT_X, SATT_Y)
-    # project new point onto line to find nearest point
     nearest_point = compute_nearest_point(new_point, slope, y_int)
-    # distance of these 2 points
     dist = new_point - nearest_point 
-    # gauss pdf of this distance, mean 0, std
     prob_of_new_point = gauss_pdf(dist, mean_satt, sigma_satt)
     return prob_of_new_point
 
@@ -113,7 +112,7 @@ def compute_probs(resolution):
             # TODO somehow figure out which line segment in
             # compute_line(), compute_nearest_point()
             spree_prob = compute_spree_prob([x,y], sigma_spree)
-            gate_prob  = compute_gate_prob(N_grid[x,y], sigma_gate)
+            gate_prob  = compute_gate_prob([x,y],  [GATE_X, GATE_Y], sigma_gate, MEAN_GATE)
             satt_prob  = compute_satt_prob([x,y], sigma_satt)
             probs[x,y] = spree_prob * gate_prob * satt_prob
 
