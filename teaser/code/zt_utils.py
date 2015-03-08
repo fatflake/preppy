@@ -81,7 +81,24 @@ def compute_nearest_point(new_point, slope, y_int):
     nearest_point = [x_nearest, y_nearest]
     return nearest_point
 
-#def compute_spree_prob(): # FIXME
+def compute_spree_prob(new_point, sigma_spree): # FIXME
+
+    X_coords = len(SPREE_X)
+    Y_coords = len(SPREE_Y) 
+    # TODO somehow figure out which line segment in
+    for i in xrange(X_coords):
+        x_loc = new_point[0] <= SPREE_X[i]      # FIXME need to be careful of when it's =, then its between segments
+        if x_loc:
+            x_seg = i
+        
+        #elif new_point[0] == SPREE_X[i]:
+          #  nearest point = [SPREE_X[i], SPREE_Y[i]]
+        
+
+    # compute_line(), compute_nearest_point()
+
+    return prob_of_new_point
+
 
 def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):  
     dist = new_point - gate_point 
@@ -108,9 +125,7 @@ def compute_probs(resolution):
     # compute probabilities
     probs = np.zeros( shape=(X, Y) )
     for x in xrange(X):
-        for y in xrange(Y):
-            # TODO somehow figure out which line segment in
-            # compute_line(), compute_nearest_point()
+        for y in xrange(Y):            
             spree_prob = compute_spree_prob([x,y], sigma_spree)
             gate_prob  = compute_gate_prob([x,y],  [GATE_X, GATE_Y], sigma_gate, MEAN_GATE)
             satt_prob  = compute_satt_prob([x,y], sigma_satt)
