@@ -77,7 +77,7 @@ def compute_line(x_coords, y_coords):
 
 def compute_nearest_point(new_point, slope, y_int): 
     x_nearest = (new_point[0] + slope*new_point[1] - y_int*slope) / (1 + slope**2)
-    y_nearest = (new_point[0]*slope + slope**2*new_point[1] + y_int*slope) / (1 + slope**2)
+    y_nearest = (new_point[0]*slope + slope**2*new_point[1] + y_int) / (1 + slope**2)
     nearest_point = [x_nearest, y_nearest]
     return nearest_point
 
