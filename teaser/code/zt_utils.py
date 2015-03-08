@@ -101,7 +101,7 @@ def compute_spree_prob(new_point, sigma_spree): # FIXME
 
 
 def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):  
-    dist = new_point - gate_point 
+    dist = np.linalg.norm(new_point - gate_point) 
     ### FIXME XXX need log normal
     prob_of_new_point = gauss_pdf(dist, mean_gate, sigma_gate)
     return prob_of_new_point
@@ -111,7 +111,7 @@ def compute_satt_prob(new_point, sigma_satt):
     mean_satt = 0.
     slope, y_int = compute_line(SATT_X, SATT_Y)
     nearest_point = compute_nearest_point(new_point, slope, y_int)
-    dist = new_point - nearest_point 
+    dist = np.linalg.norm(new_point - nearest_point) 
     prob_of_new_point = gauss_pdf(dist, mean_satt, sigma_satt)
     return prob_of_new_point
 
