@@ -17,7 +17,7 @@ def plot_everything(spree, gate, sattelite):
     plt.figure()
     plt.title("Berlin ROI")    
     plt.plot(spree[0], spree[1])
-    plt.plot(spree[0], spree[1], 'ro')           
+    plt.plot(spree[0], spree[1], 'bo')           
     plt.plot(gate[0], gate[1], 'go') 
     plt.plot(sattelite[0], sattelite[1], 'yo')   
     plt.plot(sattelite[0], sattelite[1], 'y')    
