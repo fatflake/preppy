@@ -4,6 +4,7 @@
 from scipy.special import erfinv
 import numpy as np
 from math import cos
+import math
 
 # io imports
 from zt_io import read_data
@@ -109,13 +110,19 @@ def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):
 def wiktors_butt(new_point, sigma_spree):
     X_coords = SPREE_X
     Y_coords = SPREE_Y
+    # X_coords = np.array([5., 10.])
+    # Y_coords = np.array([10., 10.])
     nn_dist = float('inf')
     nn = np.array([0., 0.])
-    for k in range(1, len(SPREE_X)):
+    for k in range(1, len(X_coords)):
+        # print 'NEW SEGMENT'
         p1 = np.array([X_coords[k-1], Y_coords[k-1]])
         p2 = np.array([X_coords[k], Y_coords[k]])
         m, y0 = compute_line(np.array([p1[0], p2[0]]), np.array([p1[1], p2[1]]))
+        # print 'new_point0:',new_point
         pp = np.array(compute_nearest_point(new_point, m, y0))
+        # print 'pp:',pp
+        # print 'new_point1:',new_point
         if pp[0] < p1[0] or pp[0] > p2[0]:
             p1_dist = np.linalg.norm(p1 - new_point)
             p2_dist = np.linalg.norm(p2 - new_point)
@@ -123,11 +130,13 @@ def wiktors_butt(new_point, sigma_spree):
                 pp = p1
             else:
                 pp = p2
-        np_dist = np.linalg.norm(pp - nn)
+        np_dist = np.linalg.norm(pp - new_point)
         if np_dist < nn_dist:
-            nn = pp
+            nn = np.array(pp)
             nn_dist = np_dist
+    # print 'dist:',nn_dist
     prob_of_new_point = gauss_pdf(nn_dist, 0.0, sigma_spree)
+    # print 'res:',prob_of_new_point
     return prob_of_new_point
 
 def compute_satt_prob(new_point, sigma_satt): 
@@ -156,3 +165,4 @@ def compute_probs(resolution):
 
     return probs
 
+wiktors_butt(np.array([5.,10]), 3.)
