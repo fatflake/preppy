@@ -90,6 +90,17 @@ def compute_spree_prob(new_point, sigma_spree): # FIXME
         x_loc = new_point[0] <= SPREE_X[i]      # FIXME need to be careful of when it's =, then its between segments
         if x_loc:
             x_seg = i
+
+    for idx, x_coord in enumerate(X_coords):    
+        x_loc = new_point[0] <= x_coord
+        if x_loc:
+            x_seg_r = idx   # right-most X-coordinate of segment: segment is to the left of this point
+    
+
+    for idx, y_coord in enumerate(Y_coords):    
+        x_loc = new_point[0] <= y_coord
+        if x_loc:
+            x_seg_r = idx   # right-most X-coordinate of segment: segment is to the left of this point
         
         #elif new_point[0] == SPREE_X[i]:
           #  nearest point = [SPREE_X[i], SPREE_Y[i]]
