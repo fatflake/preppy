@@ -13,12 +13,12 @@ def read_data():
     return spree, gate, sattelite
 
 
-def plot_everything(spree_x, spree_y, gate_x, gate_y, sattelite_x, sattelite_y):
+def plot_everything(spree, gate, sattelite):
     plt.figure()
     plt.title("Berlin ROI")    
-    plt.plot(spree_x, spree_y)
-    plt.plot(spree_x, spree_y, 'ro')           
-    plt.plot(gate_x, gate_y, 'go') 
-    plt.plot(sattelite_x, sattelite_y, 'yo')   
-    plt.plot(sattelite_x, sattelite_y, 'y')    
+    plt.plot(spree[0], spree[1])
+    plt.plot(spree[0], spree[1], 'ro')           
+    plt.plot(gate[0], gate[1], 'go') 
+    plt.plot(sattelite[0], sattelite[1], 'yo')   
+    plt.plot(sattelite[0], sattelite[1], 'y')    
     plt.savefig('Berlin_ROI.png')
