@@ -2,9 +2,10 @@
 ###################################
 
 from scipy.special import erfinv
+from scipy.stats import lognorm
 import numpy as np
-from math import cos
 import math
+from math import cos
 
 # io imports
 from zt_io import read_data
@@ -54,7 +55,9 @@ def compute_gauss_sigma(x, confidence):
     containing *confidence* proportion of probability mass
     (Alternatively, you can use a look-up table approximation: http://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule )
     """
-    sigma = x / (np.sqrt(2) * erfinv(confidence))
+    sigma_m = x / (np.sqrt(2) * erfinv(confidence))
+    # result is in m, convert to km to use  in rest of code
+    sigma = sigma_m * 0.001
     return sigma
 
 def compute_logn_sigma(mean, mode):    
@@ -64,7 +67,8 @@ def compute_logn_sigma(mean, mode):
     mode = exp(mu - sigma**2)
     where is mu of log normal is location
     """
-    sigma = np.sqrt( mode - np.log(mean) )
+    sigma_m = np.sqrt( mode - np.log(mean) )
+    sigma = sigma_m * 0.001
     return sigma
 
 def gauss_pdf(x_array, mu, sigma):
@@ -82,59 +86,66 @@ def compute_nearest_point(new_point, slope, y_int):
     nearest_point = [x_nearest, y_nearest]
     return nearest_point
 
-def compute_spree_prob(new_point, sigma_spree): # FIXME
-
-    X_coords = len(SPREE_X)
-    Y_coords = len(SPREE_Y) 
-    # TODO somehow figure out which line segment in
-    for i in xrange(X_coords):
-        x_loc = new_point[0] <= SPREE_X[i]      # FIXME need to be careful of when it's =, then its between segments
-        if x_loc:
-            x_seg = i
-
-    for idx, x_coord in enumerate(X_coords):    
-        x_loc = new_point[0] <= x_coord
-        if x_loc:
-            x_seg_r = idx   # right-most X-coordinate of segment: segment is to the left of this point
-    
-
-    for idx, y_coord in enumerate(Y_coords):    
-        x_loc = new_point[0] <= y_coord
-        if x_loc:
-            x_seg_r = idx   # right-most X-coordinate of segment: segment is to the left of this point
-        
-        #elif new_point[0] == SPREE_X[i]:
-          #  nearest point = [SPREE_X[i], SPREE_Y[i]]
-        
-
-    # compute_line(), compute_nearest_point()
-
+def compute_spree_prob(new_point, sigma_spree): 
+    X_coords = SPREE_X
+    Y_coords = SPREE_Y
+    num_segs = len(SPREE_X) - 1
+    point_distances = np.zeros(num_segs)
+    # figure out which line segment the new_point is in:
+    for i in xrange(num_segs):
+        seg_p1 = [X_coords[i], Y_coords[i]]
+        seg_p2 = [X_coords[i+1], Y_coords[i+1]]
+        # compute line segment between current points:
+        slope, y_int = compute_line([seg_p1[0], seg_p2[0]], [seg_p1[1], seg_p2[1]])
+        # compute nearest point on that segment to our new point
+        nearest_point = compute_nearest_point(new_point, slope, y_int)
+        # make sure this point isn't outside the segment
+        # XXX if new_point[0] <= nearest_point[0]:
+        if nearest_point[0] < seg_p1[0] and nearest_point[0] < seg_p2[0]:
+            # check which x_coord is smaller. p1's or p2's, and make nearest pt that coord
+            if seg_p1[0] < seg_p2[0]:
+                nearest_point = seg_p1
+            else:
+                nearest_point = seg_p2
+        # XXX elif new_point[0] => nearest_point[0]:
+        elif nearest_point[0] > seg_p1[0] and nearest_point[0] > seg_p2[0]:
+            if seg_p1[0] > seg_p2[0]:
+                nearest_point = seg_p1
+            else:
+                nearest_point = seg_p2
+        # collect distance between this nearest point and our new point
+        point_distances[i] = np.linalg.norm(new_point - nearest_point)
+    # find the nearest point of all nearest_points in all segments
+    idx_nearest_point = point_distances.argmin()    
+    # compute the probability of the distance to this point
+    prob_of_new_point = gauss_pdf(point_distances[idx_nearest_point], 0, sigma_spree)
     return prob_of_new_point
 
 
 def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):  
-    dist = np.linalg.norm(new_point - gate_point) 
-    ### FIXME XXX need log normal
-    prob_of_new_point = gauss_pdf(dist, mean_gate, sigma_gate)
+    #log_norm = lognorm([sigma_gata],loc=MODE_GATE) # std, loc=mean
+
+    dist = np.exp(np.log(np.linalg.norm(new_point - gate_point))) # do i want distance?
+    ### FIXME XXX need log normal 
+    # = gauss_pdf(dist, mean_gate, sigma_gate)
+    
+    prob_of_new_point = lognorm.pdf(dist, np.exp(np.log(sigma_gate)) ) 
     return prob_of_new_point
 
 def wiktors_butt(new_point, sigma_spree):
     X_coords = SPREE_X
     Y_coords = SPREE_Y
-    # X_coords = np.array([5., 10.])
-    # Y_coords = np.array([10., 10.])
     nn_dist = float('inf')
     nn = np.array([0., 0.])
     for k in range(1, len(X_coords)):
-        # print 'NEW SEGMENT'
+        # 'NEW SEGMENT'
         p1 = np.array([X_coords[k-1], Y_coords[k-1]])
         p2 = np.array([X_coords[k], Y_coords[k]])
         m, y0 = compute_line(np.array([p1[0], p2[0]]), np.array([p1[1], p2[1]]))
         # print 'new_point0:',new_point
         pp = np.array(compute_nearest_point(new_point, m, y0))
-        # print 'pp:',pp
         # print 'new_point1:',new_point
-        if pp[0] < p1[0] or pp[0] > p2[0]:
+        if ((pp[0] < p1[0] and pp[0] < p2[0]) or (pp[0] > p1[0] and pp[0] > p2[0])):
             p1_dist = np.linalg.norm(p1 - new_point)
             p2_dist = np.linalg.norm(p2 - new_point)
             if p1_dist < p2_dist:
@@ -145,9 +156,7 @@ def wiktors_butt(new_point, sigma_spree):
         if np_dist < nn_dist:
             nn = np.array(pp)
             nn_dist = np_dist
-    # print 'dist:',nn_dist
     prob_of_new_point = gauss_pdf(nn_dist, 0.0, sigma_spree)
-    # print 'res:',prob_of_new_point
     return prob_of_new_point
 
 def compute_satt_prob(new_point, sigma_satt): 
@@ -158,22 +167,33 @@ def compute_satt_prob(new_point, sigma_satt):
     prob_of_new_point = gauss_pdf(dist, mean_satt, sigma_satt)
     return prob_of_new_point
 
-def compute_probs(resolution):
-    X, Y = len(resolution)
+def compute_probs(RES):
+    # region of Berlin for which we care to calculate the probability of candidate
+    X_MIN, X_MAX = 0., 20.
+    Y_MIN, Y_MAX = -5., 15.
+    X = np.linspace(X_MIN, X_MAX, RES)
+    Y = np.linspace(Y_MIN, Y_MAX, RES)
 
+    # compute the parameters of the three distributions
     sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
     sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
     sigma_gate = compute_logn_sigma(MEAN_GATE, MODE_GATE)
+    print 'sigma spree:',sigma_spree
+    print 'sigma satt:',sigma_satt
+    print 'sigma gate:',sigma_gate
 
     # compute probabilities
-    probs = np.zeros( shape=(X, Y) )
-    for x in xrange(X):
-        for y in xrange(Y):            
-            spree_prob = compute_spree_prob([x,y], sigma_spree)
-            gate_prob  = compute_gate_prob([x,y],  [GATE_X, GATE_Y], sigma_gate, MEAN_GATE)
-            satt_prob  = compute_satt_prob([x,y], sigma_satt)
-            probs[x,y] = spree_prob * gate_prob * satt_prob
-
+    probs = np.zeros( shape=(len(X), len(Y)) )
+    prob_max = 0.0
+    for i, x in enumerate(X):
+        for j, y in enumerate(Y):
+            spree_prob = compute_spree_prob(np.array([x,y]), sigma_spree)
+            gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, MEAN_GATE)
+            #print "gate prob:", gate_prob
+            satt_prob  = compute_satt_prob(np.array([x,y]), sigma_satt)
+            probs[i,j] = spree_prob * satt_prob * gate_prob # * satt_prob #spree_prob + gate_prob + satt_prob
+            ##probs[i,j] = wiktors_butt(np.array([x,y]), sigma_spree)
+    
     return probs
 
-wiktors_butt(np.array([5.,10]), 3.)
+
