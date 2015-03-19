@@ -123,12 +123,10 @@ def compute_spree_prob(new_point, sigma_spree):
 
 
 def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):  
-    #log_norm = lognorm([sigma_gata],loc=MODE_GATE) # std, loc=mean
+    ### FIXME XXX need log normal -- this is the only part I'm not sure I'm doing right
 
+    #log_norm = lognorm([sigma_gata],loc=MODE_GATE) # std, loc=mean
     dist = np.exp(np.log(np.linalg.norm(new_point - gate_point))) # do i want distance?
-    ### FIXME XXX need log normal 
-    # = gauss_pdf(dist, mean_gate, sigma_gate)
-    
     prob_of_new_point = lognorm.pdf(dist, np.exp(np.log(sigma_gate)) ) 
     return prob_of_new_point
 
