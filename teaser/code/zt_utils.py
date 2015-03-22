@@ -8,7 +8,7 @@ import math
 from math import cos
 
 # io imports
-from zt_io import read_data
+from zt_io import read_data, plot_individual
 
 from proj_coords import project_data
 
@@ -22,10 +22,11 @@ IDX_LAT = 0
 IDX_LON = 1
 
 CONFIDENCE = .95
-SIG2_SPREE = 2730
-SIG2_SATT  = 2400
-MEAN_GATE  = 4700
-MODE_GATE  = 3877
+m2km = 0.001
+SIG2_SPREE = 2730 * m2km
+SIG2_SATT  = 2400 * m2km
+MEAN_GATE  = 4700 * m2km
+MODE_GATE  = 3877 * m2km
 
 # read data
 spree, gate, sattelite = read_data()
@@ -54,10 +55,9 @@ def compute_gauss_sigma(x, confidence):
     with confidence interval of size +- *x* around mean 
     containing *confidence* proportion of probability mass
     (Alternatively, you can use a look-up table approximation: http://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule )
+    Multiply result (meters) with .001 to have kilometers
     """
-    sigma_m = x / (np.sqrt(2) * erfinv(confidence))
-    # result is in m, convert to km to use  in rest of code
-    sigma = sigma_m * 0.001
+    sigma = x / (np.sqrt(2) * erfinv(confidence))
     return sigma
 
 def compute_logn_sigma(mean, mode):    
@@ -66,14 +66,19 @@ def compute_logn_sigma(mean, mode):
     mean = exp(mu + sigma**2/2)       
     mode = exp(mu - sigma**2)
     where is mu of log normal is location
+    Multiply result (meters) with .001 to have kilometers
     """
-    sigma_m = np.sqrt( mode - np.log(mean) )
-    sigma = sigma_m * 0.001
+    sigma = np.sqrt( mode - np.log(mean) )
     return sigma
 
 def gauss_pdf(x_array, mu, sigma):
     prob = (1. / math.sqrt(2*math.pi * sigma**2)) *  (np.exp(-0.5 * (x_array - mu) * (x_array - mu) / sigma**2))
     return prob
+
+def log_gauss_pdf(x_array, mu, sigma):
+    #prob = (1. / math.sqrt(2*math.pi * sigma**2)) *  (np.exp(-0.5 * (x_array - mu) * (x_array - mu) / sigma**2))
+    log_prob = -np.log(2 * np.sqrt(sigma*math.pi)) - ( (x_array - mu)**2 / (2* sigma**2) )
+    return log_prob
 
 def compute_line(x_coords, y_coords):
     slope = (y_coords[1] - y_coords[0]) / (x_coords[1] - x_coords[0])
@@ -118,17 +123,21 @@ def compute_spree_prob(new_point, sigma_spree):
     # find the nearest point of all nearest_points in all segments
     idx_nearest_point = point_distances.argmin()    
     # compute the probability of the distance to this point
-    prob_of_new_point = gauss_pdf(point_distances[idx_nearest_point], 0, sigma_spree)
+    prob_of_new_point = log_gauss_pdf(point_distances[idx_nearest_point], 0, sigma_spree)
     return prob_of_new_point
 
+
+def loglognorm(x, mu, sigma):
+    log_prob = -np.log(sigma * np.sqrt(2*math.pi)) - np.log(x) - ( (np.log(x) - mu)**2 / (2*sigma**2) )
+    return log_prob
 
 def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):  
-    ### FIXME XXX need log normal -- this is the only part I'm not sure I'm doing right
-
     #log_norm = lognorm([sigma_gata],loc=MODE_GATE) # std, loc=mean
-    dist = np.exp(np.log(np.linalg.norm(new_point - gate_point))) # do i want distance?
-    prob_of_new_point = lognorm.pdf(dist, np.exp(np.log(sigma_gate)) ) 
-    return prob_of_new_point
+
+    dist = np.linalg.norm(new_point - gate_point)
+    #prob_of_new_point = lognorm.pdf(dist, np.exp(np.log(sigma_gate)) ) 
+    log_prob = loglognorm(dist, mean_gate, sigma_gate)
+    return log_prob
 
 def wiktors_butt(new_point, sigma_spree):
     X_coords = SPREE_X
@@ -162,7 +171,7 @@ def compute_satt_prob(new_point, sigma_satt):
     slope, y_int = compute_line(SATT_X, SATT_Y)
     nearest_point = compute_nearest_point(new_point, slope, y_int)
     dist = np.linalg.norm(new_point - nearest_point) 
-    prob_of_new_point = gauss_pdf(dist, mean_satt, sigma_satt)
+    prob_of_new_point = log_gauss_pdf(dist, mean_satt, sigma_satt)
     return prob_of_new_point
 
 def compute_probs(RES):
@@ -181,17 +190,22 @@ def compute_probs(RES):
     print 'sigma gate:',sigma_gate
 
     # compute probabilities
-    probs = np.zeros( shape=(len(X), len(Y)) )
+    spree_probs = np.zeros( shape=(len(X), len(Y)) )
+    gate_probs = np.zeros( shape=(len(X), len(Y)) )
+    satt_probs = np.zeros( shape=(len(X), len(Y)) )
     prob_max = 0.0
     for i, x in enumerate(X):
         for j, y in enumerate(Y):
+            # calculate all probabilities in log space, not probability space:
             spree_prob = compute_spree_prob(np.array([x,y]), sigma_spree)
             gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, MEAN_GATE)
-            #print "gate prob:", gate_prob
             satt_prob  = compute_satt_prob(np.array([x,y]), sigma_satt)
-            probs[i,j] = spree_prob * satt_prob * gate_prob # * satt_prob #spree_prob + gate_prob + satt_prob
-            ##probs[i,j] = wiktors_butt(np.array([x,y]), sigma_spree)
-    
+            spree_probs[i,j] = spree_prob
+            gate_probs[i,j]  = gate_prob
+            satt_probs[i,j]  = satt_prob
+
+    plot_individual(spree_probs, gate_probs, satt_probs)
+    probs = spree_probs +  satt_probs  + gate_probs        
     return probs
 
 
