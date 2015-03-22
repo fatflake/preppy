@@ -16,10 +16,12 @@ from proj_coords import project_data
 ############
 
 # Set (0,0) for ROI:
-SW_LAT = 52.464011 # Latitude
-SW_LON = 13.274099 # Longitude
+SW_LAT = 52.464011 # Latitude, Y
+SW_LON = 13.274099 # Longitude, X
+IDX_LON = 1    
 IDX_LAT = 0
-IDX_LON = 1
+X_MIN, X_MAX = 0., 20.
+Y_MIN, Y_MAX = -5., 15.
 
 CONFIDENCE = .95
 m2km = 0.001
@@ -37,8 +39,8 @@ def project_data(data):
     """
     Orthogonal projection of GPS data coordinates
     """
-    data_x = -(data[:,IDX_LON] - SW_LON) * cos(SW_LAT) * 111.323
-    data_y = (data[:,IDX_LAT] - SW_LAT) * 111.323
+    data_x = -(data[:,1] - SW_LON) * cos(SW_LAT) * 111.323
+    data_y = (data[:,0] - SW_LAT) * 111.323
     return data_x, data_y
 
 SPREE_X, SPREE_Y = project_data(spree)
@@ -48,6 +50,16 @@ SATT_X, SATT_Y = project_data(sattelite)
 
 ## Functions
 ############
+
+def index2xy(index, res):
+    p_x = X_MIN + (index[1] / float(res)) * (X_MAX - X_MIN)
+    p_y = Y_MIN + (index[0] / float(res)) * (Y_MAX - Y_MIN)
+    return [p_x, p_y]
+
+def gps_coords(points):
+    p_lon = -( points[0] / (111.323*cos(SW_LAT)) ) + SW_LON
+    p_lat = (points[1] / 111.323) + SW_LAT
+    return [p_lon, p_lat]
 
 def compute_gauss_sigma(x, confidence):
     """
@@ -60,7 +72,7 @@ def compute_gauss_sigma(x, confidence):
     sigma = x / (np.sqrt(2) * erfinv(confidence))
     return sigma
 
-def compute_logn_sigma(mean, mode):    
+def compute_logn_params(mean, mode):    
     """
     Solution derived using equations...
     mean = exp(mu + sigma**2/2)       
@@ -68,8 +80,10 @@ def compute_logn_sigma(mean, mode):
     where is mu of log normal is location
     Multiply result (meters) with .001 to have kilometers
     """
-    sigma = np.sqrt( mode - np.log(mean) )
-    return sigma
+    #sigma = np.sqrt( mode - np.log(mean) )
+    sigma = np.sqrt((2./3) * (np.log(mean)-np.log(mode) ))
+    mu = (2./3) * np.log(mean) + (1./3)*np.log(mode)
+    return sigma, mu
 
 def gauss_pdf(x_array, mu, sigma):
     prob = (1. / math.sqrt(2*math.pi * sigma**2)) *  (np.exp(-0.5 * (x_array - mu) * (x_array - mu) / sigma**2))
@@ -176,18 +190,17 @@ def compute_satt_prob(new_point, sigma_satt):
 
 def compute_probs(RES):
     # region of Berlin for which we care to calculate the probability of candidate
-    X_MIN, X_MAX = 0., 20.
-    Y_MIN, Y_MAX = -5., 15.
     X = np.linspace(X_MIN, X_MAX, RES)
     Y = np.linspace(Y_MIN, Y_MAX, RES)
 
     # compute the parameters of the three distributions
     sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
     sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
-    sigma_gate = compute_logn_sigma(MEAN_GATE, MODE_GATE)
+    sigma_gate, mu_gate = compute_logn_params(MEAN_GATE, MODE_GATE)
     print 'sigma spree:',sigma_spree
     print 'sigma satt:',sigma_satt
     print 'sigma gate:',sigma_gate
+    print 'mu gate:', mu_gate
 
     # compute probabilities
     spree_probs = np.zeros( shape=(len(X), len(Y)) )
@@ -198,7 +211,7 @@ def compute_probs(RES):
         for j, y in enumerate(Y):
             # calculate all probabilities in log space, not probability space:
             spree_prob = compute_spree_prob(np.array([x,y]), sigma_spree)
-            gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, MEAN_GATE)
+            gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, mu_gate)#MEAN_GATE)
             satt_prob  = compute_satt_prob(np.array([x,y]), sigma_satt)
             spree_probs[i,j] = spree_prob
             gate_probs[i,j]  = gate_prob

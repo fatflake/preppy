@@ -5,6 +5,9 @@ import pandas as pd
 from matplotlib import pylab as plt
 import numpy as np
 
+X_MIN, X_MAX = 0., 20.
+Y_MIN, Y_MAX = -5., 15.
+
 def read_data():
 
     spree = np.array(pd.read_csv('../data/spree.csv'))
@@ -24,11 +27,7 @@ def plot_everything(spree, gate, sattelite):
     plt.savefig('Berlin_ROI.png')
 
 
-def plot_joint(probs, location):
-    X_MIN, X_MAX = 0., 20.
-    Y_MIN, Y_MAX = -5., 15.
-    #plt.figure()
-    
+def plot_joint(probs, location):    
     print "location", location[0], location[1], probs[location[0], location[1]]
     fig,ax = plt.subplots() 
     plt.title("Map of probability of candidate")  
@@ -37,7 +36,7 @@ def plot_joint(probs, location):
     print "probs.max(): ", probs.max()
     im = ax.imshow(probs.T, vmin=probs.min(), vmax=probs.max(), #vmin=abs(probs).min(), vmax=abs(probs).max(), 
                extent=[X_MIN, X_MAX, Y_MIN, Y_MAX], interpolation="None") #cmap="Greys",
-    probs[location[0], location[1]] = 0
+    probs[location[0], location[1]] = 0 # FIXME
     ax.set_aspect("equal")
     cb = fig.colorbar(im, ax=ax) 
     #plt.scatter(location[0], location[1], 'yo')
@@ -45,8 +44,6 @@ def plot_joint(probs, location):
     plt.savefig('probability_map_joint.png')   
 
 def plot_probs(probs):
-    X_MIN, X_MAX = 0., 20.
-    Y_MIN, Y_MAX = -5., 15.
     fig,ax = plt.subplots() 
     plt.title("Map of probability element")  
     probs = probs[:,::-1]  
