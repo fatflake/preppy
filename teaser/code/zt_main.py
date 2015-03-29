@@ -3,7 +3,7 @@
 ## J. Shelton / 2015
 ####################
 
-import numpy as np
+import numpy as np, sys
 
 # should these be in the file i import or here?
 
@@ -30,6 +30,7 @@ sattelite_x, sattelite_y = zt_utils.project_data(sattelite)
 zt_io.plot_everything([spree_x, spree_y], [gate_x, gate_y], [sattelite_x, sattelite_y]) 
 
 grad_ass_location = zt_utils.compute_grad_ass()
+sys.exit(0)
 print "Gradient descent location (not finished):", grad_ass_location
 # set resolution of 2D input grid
 RES = 100

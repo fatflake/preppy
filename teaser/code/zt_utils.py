@@ -186,7 +186,7 @@ def gauss_gradient(x_point, mu, sigma):
     Spree and Sattelite
     Compute gradient of a log Gaussian probability -- dL(lnN(x_{spr or sa}))/dx_{spr or sa} -- to use in objective function
     """
-    grad = (x_point - mu) / (sigma**2+ .01**5)
+    grad = (x_point - mu) / sigma**2
     return grad
 
 def lognorm_gradient(x_point, mu, sigma):
@@ -221,15 +221,19 @@ def compute_obj_func(eval_pt):
 
     # Spree:
     spree_nearest_pt = compute_spree_projected_pt(eval_pt, sigma_spree)
-    spree_grad = gauss_gradient(spree_nearest_pt, sigma_spree, mu_spree) * point_grad(eval_pt, spree_nearest_pt)
+    print 'point_grad_spree:',point_grad(eval_pt, spree_nearest_pt)
+    print 'gauss_grad_spree:',gauss_gradient(spree_nearest_pt, mu_spree, sigma_spree)
+    spree_grad = gauss_gradient(spree_nearest_pt, mu_spree, sigma_spree) * point_grad(eval_pt, spree_nearest_pt)
     # Satt:
     satt_nearest_pt = compute_satt_projected_pt(eval_pt, sigma_satt)
-    satt_grad  = gauss_gradient(satt_nearest_pt, sigma_satt, mu_satt) * point_grad(eval_pt, satt_nearest_pt)
+    satt_grad  = gauss_gradient(satt_nearest_pt, mu_satt, sigma_satt) * point_grad(eval_pt, satt_nearest_pt)
     # Gate:
     gate_dist = np.linalg.norm(eval_pt - gate_pt)
     gate_grad  = lognorm_gradient(gate_dist, mu_gate, sigma_gate) * point_grad(eval_pt, gate_pt)
     # Joint:
-    print "gradient components. spree: ", spree_grad,  "satt:", satt_grad, "gate:", gate_grad
+    print "gradient components. spree: ", spree_grad
+    print "gradient components. satt: ", satt_grad
+    print "gradient components. gate: ", gate_grad
     joint_grad = spree_grad + satt_grad + gate_grad    
     print 'joint_gradient:', joint_grad
     return -joint_grad
@@ -240,17 +244,17 @@ def compute_grad_ass():
     """
     # random init
     init_pt =  np.array([6., 5.])
-    random_x = np.random.random_sample()*(X_MAX-X_MIN) + X_MIN
-    random_y = np.random.random_sample()*(Y_MAX-Y_MIN) + Y_MIN
-    init_pt = np.array([random_x, random_y]) 
+    # random_x = np.random.random_sample()*(X_MAX-X_MIN) + X_MIN
+    # random_y = np.random.random_sample()*(Y_MAX-Y_MIN) + Y_MIN
+    # init_pt = np.array([random_x, random_y]) 
     print "init_pt", init_pt
     # Optimize the shit out of this
-    # max_pt = compute_obj_func(init_pt)
+    max_pt = compute_obj_func(init_pt)
     # print 'max_pt:', max_pt
     # max_pt = optimize.minimize(compute_obj_func, init_pt)
     # FIXME TODO -- this part isn't done yet, need t ogive f(x) AND f'(x) as args
     #max_pt = optimize.fmin_cg(compute_obj_func, init_pt)
-    max_pt = init_pt
+    # max_pt = init_pt
     return max_pt
 
 def compute_probs(RES):
