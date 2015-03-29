@@ -221,8 +221,8 @@ def compute_obj_func(eval_pt):
 
     # Spree:
     spree_nearest_pt = compute_spree_projected_pt(eval_pt, sigma_spree)
-    print 'point_grad_spree:',point_grad(eval_pt, spree_nearest_pt)
-    print 'gauss_grad_spree:',gauss_gradient(spree_nearest_pt, mu_spree, sigma_spree)
+    # print 'point_grad_spree:',point_grad(eval_pt, spree_nearest_pt)
+    # print 'gauss_grad_spree:',gauss_gradient(spree_nearest_pt, mu_spree, sigma_spree)
     spree_grad = gauss_gradient(spree_nearest_pt, mu_spree, sigma_spree) * point_grad(eval_pt, spree_nearest_pt)
     # Satt:
     satt_nearest_pt = compute_satt_projected_pt(eval_pt, sigma_satt)
@@ -231,12 +231,12 @@ def compute_obj_func(eval_pt):
     gate_dist = np.linalg.norm(eval_pt - gate_pt)
     gate_grad  = lognorm_gradient(gate_dist, mu_gate, sigma_gate) * point_grad(eval_pt, gate_pt)
     # Joint:
-    print "gradient components. spree: ", spree_grad
-    print "gradient components. satt: ", satt_grad
-    print "gradient components. gate: ", gate_grad
+    # print "gradient components. spree: ", spree_grad
+    # print "gradient components. satt: ", satt_grad
+    # print "gradient components. gate: ", gate_grad
     joint_grad = spree_grad + satt_grad + gate_grad    
-    print 'joint_gradient:', joint_grad
-    return -joint_grad
+    # print 'joint_gradient:', joint_grad
+    return joint_grad
 
 def compute_grad_ass():
     """
@@ -249,9 +249,13 @@ def compute_grad_ass():
     # init_pt = np.array([random_x, random_y]) 
     print "init_pt", init_pt
     # Optimize the shit out of this
-    max_pt = compute_obj_func(init_pt)
+    test_pt = compute_obj_func(init_pt)
+    print 'test_pt:',test_pt
+    log_prob_1 = joint_log_prob(init_pt)
+    print 'log_prob:',log_prob_1
     # print 'max_pt:', max_pt
-    # max_pt = optimize.minimize(compute_obj_func, init_pt)
+    max_pt = optimize.minimize(joint_log_prob, init_pt, jac=compute_obj_func, method='BFGS')
+    print 'max_pt:',max_pt
     # FIXME TODO -- this part isn't done yet, need t ogive f(x) AND f'(x) as args
     #max_pt = optimize.fmin_cg(compute_obj_func, init_pt)
     # max_pt = init_pt
@@ -294,4 +298,16 @@ def compute_probs(RES):
     probs = spree_probs +  satt_probs  + gate_probs        
     return probs
 
-
+def joint_log_prob(eval_pt):
+    x, y = eval_pt[0], eval_pt[1]
+    sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
+    sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
+    sigma_gate, mu_gate = compute_logn_params(MEAN_GATE, MODE_GATE)
+    spree_prob = compute_spree_prob(np.array([x,y]), sigma_spree)
+    gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, mu_gate)
+    satt_prob  = compute_satt_prob(np.array([x,y]), sigma_satt)
+    # print 'spree_prob:',spree_prob
+    # print 'gate_prob:',gate_prob
+    # print 'satt_prob:',satt_prob
+    joint_prob = spree_prob + gate_prob + satt_prob
+    return joint_prob
