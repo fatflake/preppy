@@ -201,8 +201,8 @@ def point_grad(eval_pt, nearest_pt):
     """
     Compute dx_{g,spr,or sa}/dq_x and dx_{g,spr,or sa}/dq_y to use in objective function
     """
-    grad_x = eval_pt[0] - nearest_pt[0] / (np.linalg.norm(eval_pt - nearest_pt) + .01**10)
-    grad_y = eval_pt[1] - nearest_pt[1] / (np.linalg.norm(eval_pt - nearest_pt) + .01**10)
+    grad_x = (eval_pt[0] - nearest_pt[0]) / (np.linalg.norm(eval_pt - nearest_pt))
+    grad_y = (eval_pt[1] - nearest_pt[1]) / (np.linalg.norm(eval_pt - nearest_pt))
     return np.array([grad_x, grad_y])
 
 def compute_obj_func(eval_pt):
@@ -223,20 +223,25 @@ def compute_obj_func(eval_pt):
     spree_nearest_pt = compute_spree_projected_pt(eval_pt, sigma_spree)
     # print 'point_grad_spree:',point_grad(eval_pt, spree_nearest_pt)
     # print 'gauss_grad_spree:',gauss_gradient(spree_nearest_pt, mu_spree, sigma_spree)
-    spree_grad = gauss_gradient(spree_nearest_pt, mu_spree, sigma_spree) * point_grad(eval_pt, spree_nearest_pt)
+    x_spree = np.linalg.norm(spree_nearest_pt - eval_pt)
+    spree_grad = -gauss_gradient(x_spree, mu_spree, sigma_spree) * point_grad(eval_pt, spree_nearest_pt)
     # Satt:
     satt_nearest_pt = compute_satt_projected_pt(eval_pt, sigma_satt)
-    satt_grad  = gauss_gradient(satt_nearest_pt, mu_satt, sigma_satt) * point_grad(eval_pt, satt_nearest_pt)
+    print 'satt_nearest point:',satt_nearest_pt
+    print 'point_grad:',point_grad(eval_pt, satt_nearest_pt)
+    x_satt = np.linalg.norm(satt_nearest_pt - eval_pt)
+    print 'gauss_gradient:',gauss_gradient(x_satt, mu_satt, sigma_satt)
+    satt_grad  = -gauss_gradient(x_satt, mu_satt, sigma_satt) * point_grad(eval_pt, satt_nearest_pt)
     # Gate:
     gate_dist = np.linalg.norm(eval_pt - gate_pt)
     gate_grad  = lognorm_gradient(gate_dist, mu_gate, sigma_gate) * point_grad(eval_pt, gate_pt)
     # Joint:
-    # print "gradient components. spree: ", spree_grad
-    # print "gradient components. satt: ", satt_grad
-    # print "gradient components. gate: ", gate_grad
+    print "gradient components. spree: ", spree_grad
+    print "gradient components. satt: ", satt_grad
+    print "gradient components. gate: ", gate_grad
     joint_grad = spree_grad + satt_grad + gate_grad    
-    # print 'joint_gradient:', joint_grad
-    return joint_grad
+    print 'joint_gradient:', joint_grad
+    return -joint_grad
 
 def compute_grad_ass():
     """
@@ -247,15 +252,15 @@ def compute_grad_ass():
     # random_x = np.random.random_sample()*(X_MAX-X_MIN) + X_MIN
     # random_y = np.random.random_sample()*(Y_MAX-Y_MIN) + Y_MIN
     # init_pt = np.array([random_x, random_y]) 
-    print "init_pt", init_pt
+    # print "init_pt", init_pt
     # Optimize the shit out of this
-    test_pt = compute_obj_func(init_pt)
-    print 'test_pt:',test_pt
-    log_prob_1 = joint_log_prob(init_pt)
-    print 'log_prob:',log_prob_1
+    # test_pt = compute_obj_func(init_pt)
+    # print 'test_pt:',test_pt
+    # log_prob_1 = joint_log_prob(init_pt)
+    # print 'log_prob:',log_prob_1
     # print 'max_pt:', max_pt
     max_pt = optimize.minimize(joint_log_prob, init_pt, jac=compute_obj_func, method='BFGS')
-    print 'max_pt:',max_pt
+    # print 'max_pt:',max_pt
     # FIXME TODO -- this part isn't done yet, need t ogive f(x) AND f'(x) as args
     #max_pt = optimize.fmin_cg(compute_obj_func, init_pt)
     # max_pt = init_pt
@@ -299,6 +304,7 @@ def compute_probs(RES):
     return probs
 
 def joint_log_prob(eval_pt):
+    print 'OBJ":',eval_pt
     x, y = eval_pt[0], eval_pt[1]
     sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
     sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
