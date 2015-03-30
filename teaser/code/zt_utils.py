@@ -316,4 +316,4 @@ def joint_log_prob(eval_pt):
     # print 'gate_prob:',gate_prob
     # print 'satt_prob:',satt_prob
     joint_prob = spree_prob + gate_prob + satt_prob
-    return joint_prob
+    return -joint_prob
