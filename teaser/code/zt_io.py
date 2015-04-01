@@ -5,6 +5,8 @@ import pandas as pd
 from matplotlib import pylab as plt
 import numpy as np
 
+import pygmaps 
+
 X_MIN, X_MAX = 0., 20.
 Y_MIN, Y_MAX = -5., 15.
 
@@ -32,8 +34,6 @@ def plot_joint(probs, location):
     fig,ax = plt.subplots() 
     plt.title("Map of probability of candidate")  
     probs = probs[:,::-1]  
-    print "probs.min(): ", probs.min()
-    print "probs.max(): ", probs.max()
     im = ax.imshow(probs.T, vmin=probs.min(), vmax=probs.max(), #vmin=abs(probs).min(), vmax=abs(probs).max(), 
                extent=[X_MIN, X_MAX, Y_MIN, Y_MAX], interpolation="None") #cmap="Greys",
     probs[location[0], location[1]] = 0 # FIXME
@@ -47,8 +47,6 @@ def plot_probs(probs):
     fig,ax = plt.subplots() 
     plt.title("Map of probability element")  
     probs = probs[:,::-1]  
-    print "probs.min(): ", probs.min()
-    print "probs.max(): ", probs.max()
     im = ax.imshow(probs.T, vmin=probs.min(), vmax=probs.max(), #vmin=abs(probs).min(), vmax=abs(probs).max(), 
                extent=[X_MIN, X_MAX, Y_MIN, Y_MAX], interpolation="None") #cmap="Greys",
     ax.set_aspect("equal")
@@ -61,4 +59,58 @@ def plot_individual(spree, gate, satt):
     plt.savefig('probability_map_gate.png')   
     plot_probs(satt)
     plt.savefig('probability_map_satt.png')   
+
+
+def plot_gmap(max_pt, gate_pt, spree, satt):
+
+    ##for i, j in xrange(len(spree)):
+      ##  spree_path = [(spree_x
+    ##spree_path = [(spree[i], spree[j]) for i,j in range(len(spree)) ] 
+    ########## CONSTRUCTOR: pygmaps.maps(latitude, longitude, zoom) ##############################
+    # DESC:         initialize a map  with latitude and longitude of center point  
+    #               and map zoom level "15"
+    # PARAMETER1:   latitude (float) latittude of map center point
+    # PARAMETER2:   longitude (float) latittude of map center point
+    # PARAMETER3:   zoom (int)  map zoom level 0~20
+    # RETURN:       the instant of pygmaps
+    #========================================================================================
+    center_x = 9.30080283
+    center_y = 5.71331901
+    mymap = pygmaps.maps(center_y, center_x, 16)
+
+
+    ########## FUNCTION:  addradpoint(latitude, longitude, radius, [color], title)##################
+    # DESC:         add a point with a radius (Meter) - Draw cycle
+    # PARAMETER1:   latitude (float) latitude of the point
+    # PARAMETER2:   longitude (float) longitude of the point
+    # PARAMETER3:   radius (float), radius  in meter 
+    # PARAMETER4:   color (string) color of the point showed in map, using HTML color code
+    #               HTML COLOR CODE:  http://www.computerhope.com/htmcolor.htm
+    #               e.g. red "#FF0000", Blue "#0000FF", Green "#00FF00"
+    # PARAMETER5:   title (string), label for the point
+    # RETURN:       no return 
+    #========================================================================================
+    mymap.addradpoint(gate_pt[0], gate_pt[1], 95, "#FF0000")#,"Brandenburger Tor")
+    mymap.addradpoint(max_pt[0], max_pt[1], 95, "#FF0000") #"candidate's location")
+
+
+    ########## FUNCTION:  addpath(path,[color])##############################################
+    # DESC:         add a path into map, the data struceture of Path is a list of points
+    # PARAMETER1:   path (list of coordinates) e.g. [(lat1,lng1),(lat2,lng2),...]
+    # PARAMETER2:   color (string) color of the point showed in map, using HTML color code
+    #               HTML COLOR CODE:  http://www.computerhope.com/htmcolor.htm
+    #               e.g. red "#FF0000", Blue "#0000FF", Green "#00FF00"
+    # RETURN:       no return
+    #========================================================================================
+    #path = [(37.429, -122.145),(37.428, -122.145),(37.427, -122.145),(37.427, -122.146),(37.427, -122.146)]
+
+    mymap.addpath(spree,"#1569C7")
+    #mymap.addpath(satt_path,"#6960EC")
+
+    ########## FUNCTION:  draw(file)######################################################
+    # DESC:         create the html map file (.html)
+    # PARAMETER1:   file (string) the map path and file
+    # RETURN:       no return, generate html file in specified directory
+    #========================================================================================
+    mymap.draw('output/cand_loc.html')
 
