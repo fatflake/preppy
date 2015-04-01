@@ -76,7 +76,7 @@ def plot_gmap(max_pt, gate_pt, spree, satt):
     #========================================================================================
     center_x = 9.30080283
     center_y = 5.71331901
-    mymap = pygmaps.maps(center_x, center_y, 16)
+    mymap = pygmaps.maps(center_y, center_x, 16)
 
 
     ########## FUNCTION:  addradpoint(latitude, longitude, radius, [color], title)##################

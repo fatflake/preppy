@@ -41,6 +41,7 @@ probs = zt_utils.compute_probs(RES)
 # take max
 max_prob = probs.max()
 location_idx = np.unravel_index(probs.argmax(), (RES,RES)) 
+print 'loc_idx:',location_idx
 location_xy = zt_utils.index2xy(location_idx, RES)
 location_gps = zt_utils.xy2gps(location_xy)
 
