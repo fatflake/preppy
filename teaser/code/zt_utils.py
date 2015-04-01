@@ -49,6 +49,9 @@ GATE_X, GATE_Y = GATE_X[0], GATE_Y[0]
 SATT_X, SATT_Y = project_data(sattelite)
 
 
+
+
+
 ## Functions
 ############
 
@@ -129,11 +132,21 @@ def log_gauss_pdf(x_array, mu, sigma):
     return log_prob
 
 
+# compute the parameters of the three distributions
+print "-" * 70
+SIGMA_SPREE = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
+sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
+sigma_gate, mu_gate = compute_logn_params(MEAN_GATE, MODE_GATE)
+print "Distribution parameters:"
+print '- sigma_spree:',SIGMA_SPREE
+print '- sigma_satt:',sigma_satt
+print '- sigma_gate:',sigma_gate
+print '- mu_gate:', mu_gate
 
 
 ## Spree functions ## 
 
-def compute_spree_projected_pt(new_point, sigma_spree): 
+def compute_spree_projected_pt(new_point, SIGMA_SPREE): 
     """
     ...
     """
@@ -170,13 +183,13 @@ def compute_spree_projected_pt(new_point, sigma_spree):
     idx_nearest_point = point_distances.argmin()    
     return nearest_points[idx_nearest_point]
 
-def compute_spree_prob(new_point, sigma_spree): 
+def compute_spree_prob(new_point, SIGMA_SPREE): 
     """
     ...
     """
-    nearest_point = compute_spree_projected_pt(new_point, sigma_spree)
+    nearest_point = compute_spree_projected_pt(new_point, SIGMA_SPREE)
     dist = np.linalg.norm(new_point - nearest_point)
-    prob_of_new_point = log_gauss_pdf(dist, 0, sigma_spree)
+    prob_of_new_point = log_gauss_pdf(dist, 0, SIGMA_SPREE)
     return prob_of_new_point
 
 ## Gate functions ##
@@ -217,6 +230,7 @@ def compute_satt_prob(new_point, sigma_satt):
     prob_of_new_point = log_gauss_pdf(dist, mean_satt, sigma_satt)
     return prob_of_new_point
 
+## Gradients ##
 
 def gauss_gradient(x_dist, mu, sigma):
     """
@@ -244,12 +258,8 @@ def point_grad(eval_pt, nearest_pt):
 
 
 def neg_joint_log_prob(eval_pt):
-    print 'OBJ:',eval_pt
     x, y = eval_pt[0], eval_pt[1]
-    sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
-    sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
-    sigma_gate, mu_gate = compute_logn_params(MEAN_GATE, MODE_GATE)
-    spree_prob = compute_spree_prob(np.array([x,y]), sigma_spree)
+    spree_prob = compute_spree_prob(np.array([x,y]), SIGMA_SPREE)
     gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, mu_gate)
     satt_prob  = compute_satt_prob(np.array([x,y]), sigma_satt)
     joint_prob = spree_prob + gate_prob + satt_prob
@@ -257,22 +267,16 @@ def neg_joint_log_prob(eval_pt):
 
 def neg_joint_log_grad(eval_pt):
     """
-    Gradient of objective function: log joint probability, want to do coordinate ascent on to find max of
+    Gradient of objective function: log joint probability, want to do coordinate descent on to find max (min) of
     """
-    # compute the parameters of the three distributions
     eval_pt = np.array(eval_pt)
-    
-    sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
-    sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
-    sigma_gate, mu_gate = compute_logn_params(MEAN_GATE, MODE_GATE)
     mu_spree = 0.
     mu_satt = 0.
     gate_pt = [GATE_X, GATE_Y]
-
     # Spree:
-    spree_nearest_pt = compute_spree_projected_pt(eval_pt, sigma_spree)
+    spree_nearest_pt = compute_spree_projected_pt(eval_pt, SIGMA_SPREE)
     x_spree = np.linalg.norm(spree_nearest_pt - eval_pt)
-    spree_grad = -gauss_gradient(x_spree, mu_spree, sigma_spree) * point_grad(eval_pt, spree_nearest_pt)
+    spree_grad = -gauss_gradient(x_spree, mu_spree, SIGMA_SPREE) * point_grad(eval_pt, spree_nearest_pt)
     # Satt:
     satt_nearest_pt = compute_satt_projected_pt(eval_pt, sigma_satt)
     x_satt = np.linalg.norm(satt_nearest_pt - eval_pt)
@@ -281,47 +285,34 @@ def neg_joint_log_grad(eval_pt):
     gate_dist = np.linalg.norm(eval_pt - gate_pt)
     gate_grad  = lognorm_gradient(gate_dist, mu_gate, sigma_gate) * point_grad(eval_pt, gate_pt)
     # Joint:
-    # print "gradient components. spree: ", spree_grad
-    # print "gradient components. satt: ", satt_grad
-    # print "gradient components. gate: ", gate_grad
     joint_grad = spree_grad + satt_grad + gate_grad    
-    # print 'joint_gradient:', joint_grad
     return -joint_grad
+
 
 ## Solvers ## 
 
-def compute_grad_ass():
+def compute_grad_desc():
     """
-    Solve the problem by gradient descent on the objective function, (-$, but no visualization)
+    1) Solve the problem by gradient descent on the objective function (neg joint log probability), (-$, but no visualization)
     """
-    # random init
+    # random initialization
     random_x = np.random.random_sample()*(X_MAX-X_MIN) + X_MIN
     random_y = np.random.random_sample()*(Y_MAX-Y_MIN) + Y_MIN
     init_pt = np.array([random_x, random_y]) 
     print "Random initialization:", init_pt
-    opt_result = optimize.minimize(neg_joint_log_prob, init_pt, jac=neg_joint_log_grad, method='BFGS')
-    # need t ogive f(x) AND f'(x) as args
+    opt_result = optimize.minimize(neg_joint_log_prob, init_pt, jac=neg_joint_log_grad, method='BFGS')# wants f(x) and f'(x) as args
     max_pt = opt_result.x
     return max_pt
 
+
 def compute_probs(RES):
     """
-    Solve the problem using discretezation of the Region of Interest into a 2D grid,
+    2) Solve the problem using discretezation of the Region of Interest into a 2D grid,
     computing the probability of the candidate at every point ($$$, but gives nice visualization!)
     """
     # region of Berlin for which we care to calculate the probability of candidate
     X = np.linspace(X_MIN, X_MAX, RES)
     Y = np.linspace(Y_MIN, Y_MAX, RES)
-
-    # compute the parameters of the three distributions
-    sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
-    sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
-    sigma_gate, mu_gate = compute_logn_params(MEAN_GATE, MODE_GATE)
-    print "Distribution parameters:"
-    print 'sigma_spree:',sigma_spree
-    print 'sigma_satt:',sigma_satt
-    print 'sigma_gate:',sigma_gate
-    print 'mu_gate:', mu_gate
 
     # compute probabilities
     spree_probs = np.zeros( shape=(len(X), len(Y)) )
@@ -331,7 +322,7 @@ def compute_probs(RES):
     for i, x in enumerate(X):
         for j, y in enumerate(Y):
             # calculate all probabilities in log space, not probability space:
-            spree_prob = compute_spree_prob(np.array([x,y]), sigma_spree)
+            spree_prob = compute_spree_prob(np.array([x,y]), SIGMA_SPREE)
             gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, mu_gate)#MEAN_GATE)
             satt_prob  = compute_satt_prob(np.array([x,y]), sigma_satt)
             spree_probs[i,j] = spree_prob
