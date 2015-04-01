@@ -5,7 +5,7 @@ import pandas as pd
 from matplotlib import pylab as plt
 import numpy as np
 
-# import pygmaps 
+import pygmaps 
 
 X_MIN, X_MAX = 0., 20.
 Y_MIN, Y_MAX = -5., 15.
