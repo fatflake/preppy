@@ -277,20 +277,20 @@ def neg_joint_log_grad(eval_pt):
     spree_grad = -gauss_gradient(x_spree, mu_spree, sigma_spree) * point_grad(eval_pt, spree_nearest_pt)
     # Satt:
     satt_nearest_pt = compute_satt_projected_pt(eval_pt, sigma_satt)
-    print 'satt_nearest point:',satt_nearest_pt
-    print 'point_grad:',point_grad(eval_pt, satt_nearest_pt)
+    # print 'satt_nearest point:',satt_nearest_pt
+    # print 'point_grad:',point_grad(eval_pt, satt_nearest_pt)
     x_satt = np.linalg.norm(satt_nearest_pt - eval_pt)
-    print 'gauss_gradient:',gauss_gradient(x_satt, mu_satt, sigma_satt)
+    # print 'gauss_gradient:',gauss_gradient(x_satt, mu_satt, sigma_satt)
     satt_grad  = -gauss_gradient(x_satt, mu_satt, sigma_satt) * point_grad(eval_pt, satt_nearest_pt)
     # Gate:
     gate_dist = np.linalg.norm(eval_pt - gate_pt)
     gate_grad  = lognorm_gradient(gate_dist, mu_gate, sigma_gate) * point_grad(eval_pt, gate_pt)
     # Joint:
-    print "gradient components. spree: ", spree_grad
-    print "gradient components. satt: ", satt_grad
-    print "gradient components. gate: ", gate_grad
+    # print "gradient components. spree: ", spree_grad
+    # print "gradient components. satt: ", satt_grad
+    # print "gradient components. gate: ", gate_grad
     joint_grad = spree_grad + satt_grad + gate_grad    
-    print 'joint_gradient:', joint_grad
+    # print 'joint_gradient:', joint_grad
     return -joint_grad
 
 ## Solvers ## 
