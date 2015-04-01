@@ -32,6 +32,7 @@ MODE_GATE  = 3877 * m2km
 # read data
 spree, gate, sattelite = read_data()
 
+from proj_coords import project_data
 
 # project data 
 def project_data(data):
@@ -243,7 +244,7 @@ def point_grad(eval_pt, nearest_pt):
 
 
 def neg_joint_log_prob(eval_pt):
-    print 'OBJ":',eval_pt
+    print 'OBJ:',eval_pt
     x, y = eval_pt[0], eval_pt[1]
     sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
     sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
@@ -251,9 +252,6 @@ def neg_joint_log_prob(eval_pt):
     spree_prob = compute_spree_prob(np.array([x,y]), sigma_spree)
     gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, mu_gate)
     satt_prob  = compute_satt_prob(np.array([x,y]), sigma_satt)
-    # print 'spree_prob:',spree_prob
-    # print 'gate_prob:',gate_prob
-    # print 'satt_prob:',satt_prob
     joint_prob = spree_prob + gate_prob + satt_prob
     return -joint_prob
 
@@ -277,10 +275,10 @@ def neg_joint_log_grad(eval_pt):
     spree_grad = -gauss_gradient(x_spree, mu_spree, sigma_spree) * point_grad(eval_pt, spree_nearest_pt)
     # Satt:
     satt_nearest_pt = compute_satt_projected_pt(eval_pt, sigma_satt)
-    print 'satt_nearest point:',satt_nearest_pt
-    print 'point_grad:',point_grad(eval_pt, satt_nearest_pt)
+    #     print 'satt_nearest point:',satt_nearest_pt
+    #     print 'point_grad:',point_grad(eval_pt, satt_nearest_pt)
     x_satt = np.linalg.norm(satt_nearest_pt - eval_pt)
-    print 'gauss_gradient:',gauss_gradient(x_satt, mu_satt, sigma_satt)
+    #    print 'gauss_gradient:',gauss_gradient(x_satt, mu_satt, sigma_satt)
     satt_grad  = -gauss_gradient(x_satt, mu_satt, sigma_satt) * point_grad(eval_pt, satt_nearest_pt)
     # Gate:
     gate_dist = np.linalg.norm(eval_pt - gate_pt)
@@ -303,7 +301,7 @@ def compute_grad_ass():
     random_x = np.random.random_sample()*(X_MAX-X_MIN) + X_MIN
     random_y = np.random.random_sample()*(Y_MAX-Y_MIN) + Y_MIN
     init_pt = np.array([random_x, random_y]) 
-    print "init_pt", init_pt
+    print "Random initialization:", init_pt
     opt_result = optimize.minimize(neg_joint_log_prob, init_pt, jac=neg_joint_log_grad, method='BFGS')
     # need t ogive f(x) AND f'(x) as args
     max_pt = opt_result.x
@@ -322,10 +320,11 @@ def compute_probs(RES):
     sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
     sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
     sigma_gate, mu_gate = compute_logn_params(MEAN_GATE, MODE_GATE)
-    print 'sigma spree:',sigma_spree
-    print 'sigma satt:',sigma_satt
-    print 'sigma gate:',sigma_gate
-    print 'mu gate:', mu_gate
+    print "Distribution parameters:"
+    print 'sigma_spree:',sigma_spree
+    print 'sigma_satt:',sigma_satt
+    print 'sigma_gate:',sigma_gate
+    print 'mu_gate:', mu_gate
 
     # compute probabilities
     spree_probs = np.zeros( shape=(len(X), len(Y)) )
