@@ -30,7 +30,6 @@ sattelite_x, sattelite_y = zt_utils.project_data(sattelite)
 zt_io.plot_everything([spree_x, spree_y], [gate_x, gate_y], [sattelite_x, sattelite_y]) 
 
 grad_ass_location = zt_utils.compute_grad_ass()
-# sys.exit(0)
 print "Gradient descent location (not finished):", grad_ass_location
 # set resolution of 2D input grid
 RES = 100
@@ -42,17 +41,9 @@ probs = zt_utils.compute_probs(RES)
 max_prob = probs.max()
 location_idx = np.unravel_index(probs.argmax(), (RES,RES)) 
 location_xy = zt_utils.index2xy(location_idx, RES)
-location_gps = zt_utils.gps_coords(location_xy)
+location_gps = zt_utils.xy2gps(location_xy)
 
 print "Resolution of discretization: %d x %d" % (RES, RES)
-
-sameh = np.array([[52.51104008, 13.45584084]])
-loc_sameh = zt_utils.project_data(sameh)
-gps_sameh = zt_utils.gps_coords(loc_sameh)
-print "Sameh:"
-print" -- original GPS:", sameh
-print "-- XY coords:", loc_sameh
-print "-- GPS (recalc'ed) coords:", gps_sameh
 
 print "Our solution, with -(log(probability)):", max_prob, ":"
 print "-- index:", location_idx
@@ -61,7 +52,7 @@ print "-- GPS:", location_gps
 
 # TODO pygmaps
 # TODO fix plotting to use a coordinate mapping function
-
+ 
 # plot/save result
 zt_io.plot_joint(probs, location_idx)
 
