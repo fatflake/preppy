@@ -81,11 +81,10 @@ def compute_line(x_coords, y_coords):
 
 def compute_nearest_point(new_point, slope, y_int): 
     """
-    ...
+    Compute nearest_point to *new_point* on line defined by *new_point*, *slope*, *y_int*.
     """
     x_nearest = (new_point[0] + slope*new_point[1] - y_int*slope) / (1 + slope**2)
     y_nearest = (new_point[0]*slope + slope**2*new_point[1] + y_int) / (1 + slope**2)
-
     nearest_point = np.array([x_nearest, y_nearest])
     return nearest_point
 
@@ -117,7 +116,7 @@ def compute_logn_params(mean, mode):
 
 def gauss_pdf(x_array, mu, sigma):
     """
-    Gives pdf of value *x_array* from Gaussian with parameters *mu* and *sigma*
+    Gives pdf of value *x_array* from Gaussian with parameters *mu* and *sigma*.
     """
     prob = (1. / np.sqrt(2*np.pi * sigma**2)) *  (np.exp(-0.5 * (x_array - mu) * (x_array - mu) / sigma**2))
     return prob
@@ -126,7 +125,7 @@ def log_gauss_pdf(x_array, mu, sigma):
     #prob = (1. / np.sqrt(2*np.pi * sigma**2)) *  (np.exp(-0.5 * (x_array - mu) * (x_array - mu) / sigma**2))
 
     """
-    For value *x_array* from log-Gaussian with parameters *mu* and *sigma*, outputs pdf value
+    For value *x_array* from log-Gaussian with parameters *mu* and *sigma*, outputs pdf value.
     """
     log_prob = -np.log(2 * np.sqrt(sigma*np.pi)) - ( (x_array - mu)**2 / (2* sigma**2) )
     return log_prob
@@ -148,7 +147,8 @@ print '- mu_gate:', mu_gate
 
 def compute_spree_projected_pt(new_point, SIGMA_SPREE): 
     """
-    ...
+    Finds the closest point on the Spree path to *new_point* by minimizing 
+    the l2-norm of the projected point on all Spree regions.
     """
     X_coords = SPREE_X
     Y_coords = SPREE_Y
@@ -185,7 +185,8 @@ def compute_spree_projected_pt(new_point, SIGMA_SPREE):
 
 def compute_spree_prob(new_point, SIGMA_SPREE): 
     """
-    ...
+    Computes probability of *new_point* along path of Spree, using distance 
+    between it and nearest_point as Spree Gauss mean.
     """
     nearest_point = compute_spree_projected_pt(new_point, SIGMA_SPREE)
     dist = np.linalg.norm(new_point - nearest_point)
@@ -196,14 +197,14 @@ def compute_spree_prob(new_point, SIGMA_SPREE):
 
 def loglognorm(x, mu, sigma):
     """
-    ...
+    Compute log log-Normal pdf.
     """
     log_prob = -np.log(sigma * np.sqrt(2*np.pi)) - np.log(x) - ( (np.log(x) - mu)**2 / (2*sigma**2) )
     return log_prob
 
 def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):  
     """
-    ...
+    Compute probability of *new_point* w.r.t. log-normal around *gate_point*.
     """
     dist = np.linalg.norm(new_point - gate_point)
     log_prob = loglognorm(dist, mean_gate, sigma_gate)
@@ -214,7 +215,7 @@ def compute_gate_prob(new_point, gate_point, sigma_gate, mean_gate):
 
 def compute_satt_projected_pt(new_point, sigma_satt): 
     """
-    ...
+    Finds the closest point on the Sattelite path to *new_point*.
     """
     slope, y_int = compute_line(SATT_X, SATT_Y)
     nearest_point = compute_nearest_point(new_point, slope, y_int)
@@ -222,7 +223,7 @@ def compute_satt_projected_pt(new_point, sigma_satt):
 
 def compute_satt_prob(new_point, sigma_satt): 
     """
-    ...
+    Computes probability of *new_point* along path of Sattelite.
     """
     mean_satt = 0.
     nearest_point = compute_satt_projected_pt(new_point, sigma_satt)
@@ -234,8 +235,8 @@ def compute_satt_prob(new_point, sigma_satt):
 
 def gauss_gradient(x_dist, mu, sigma):
     """
-    Spree and Sattelite
-    Compute gradient of a log Gaussian probability -- dL(lnN(x_{spr or sa}))/dx_{spr or sa} -- to use in objective function
+    Spree and Sattelite:
+    Compute gradient of a log Gaussian probability -- dL(lnN(x_{spr or sa}))/dx_{spr or sa} -- to use in objective function.
     """
     grad = (x_dist - mu) / sigma**2
     return grad
@@ -243,14 +244,14 @@ def gauss_gradient(x_dist, mu, sigma):
 def lognorm_gradient(x_dist, mu, sigma):
     """
     Gate:
-    Compute gradient of a log log-Normal probability -- dL(lnN(x_{g}))/dx_{g} -- to use in objective function
+    Compute gradient of a log log-Normal probability -- dL(lnN(x_{g}))/dx_{g} -- to use in objective function.
     """
     grad = - (1./x_dist) -  ((np.log(x_dist) - mu) / (x_dist*sigma**2))
     return grad
 
 def point_grad(eval_pt, nearest_pt):
     """
-    Compute dx_{g,spr,or sa}/dq_x and dx_{g,spr,or sa}/dq_y to use in objective function
+    Compute dx_{g,spr,or sa}/dq_x and dx_{g,spr,or sa}/dq_y to use in objective function.
     """
     grad_x = (eval_pt[0] - nearest_pt[0]) / (np.linalg.norm(eval_pt - nearest_pt))
     grad_y = (eval_pt[1] - nearest_pt[1]) / (np.linalg.norm(eval_pt - nearest_pt))
@@ -258,6 +259,9 @@ def point_grad(eval_pt, nearest_pt):
 
 
 def neg_joint_log_prob(eval_pt):
+    """
+    Objective function: log joint probability using all out information, f(x)
+    """
     x, y = eval_pt[0], eval_pt[1]
     spree_prob = compute_spree_prob(np.array([x,y]), SIGMA_SPREE)
     gate_prob  = compute_gate_prob(np.array([x,y]),  [GATE_X, GATE_Y], sigma_gate, mu_gate)
@@ -267,7 +271,7 @@ def neg_joint_log_prob(eval_pt):
 
 def neg_joint_log_grad(eval_pt):
     """
-    Gradient of objective function: log joint probability, want to do coordinate descent on to find max (min) of
+    Gradient of objective function: log joint probability, do coordinate descent on to find min of, f'(x).
     """
     eval_pt = np.array(eval_pt)
     mu_spree = 0.
@@ -293,14 +297,15 @@ def neg_joint_log_grad(eval_pt):
 
 def compute_grad_desc():
     """
-    1) Solve the problem by gradient descent on the objective function (neg joint log probability), (-$, but no visualization)
+    1) Solve the problem by gradient descent on the objective function (neg joint log probability), (-$, but no visualization).
     """
     # random initialization
     random_x = np.random.random_sample()*(X_MAX-X_MIN) + X_MIN
     random_y = np.random.random_sample()*(Y_MAX-Y_MIN) + Y_MIN
     init_pt = np.array([random_x, random_y]) 
     print "Random initialization:", init_pt
-    opt_result = optimize.minimize(neg_joint_log_prob, init_pt, jac=neg_joint_log_grad, method='BFGS')# wants f(x) and f'(x) as args
+    # wants f(x) and f'(x) as args:
+    opt_result = optimize.minimize(neg_joint_log_prob, init_pt, jac=neg_joint_log_grad, method='BFGS')
     max_pt = opt_result.x
     return max_pt
 
@@ -308,7 +313,7 @@ def compute_grad_desc():
 def compute_probs(RES):
     """
     2) Solve the problem using discretezation of the Region of Interest into a 2D grid,
-    computing the probability of the candidate at every point ($$$, but gives nice visualization!)
+    computing the probability of the candidate at every point ($$$, but gives nice visualization!).
     """
     # region of Berlin for which we care to calculate the probability of candidate
     X = np.linspace(X_MIN, X_MAX, RES)
