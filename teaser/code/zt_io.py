@@ -83,7 +83,7 @@ def plot_gmap(max_pt, gate_arr, spree, satt):
     # PARAMETER5:   title (string), label for the point
     # RETURN:       no return 
     #========================================================================================
-    mymap.addradpoint(gate[0], gate[1], 95, "#3DFF33")
+    mymap.addradpoint(gate[0], gate[1], 95, "#822DA1")
     mymap.addradpoint(max_pt[1], max_pt[0], 95, "#F433FF")
     mymap.addpoint(max_pt[1], max_pt[0], "#00FFFF")
 

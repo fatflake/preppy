@@ -53,13 +53,9 @@ print "Grid solution, min of -(log(probability)):"
 print "-- index:", location_idx[::-1]
 print "-- XY coords:", location_xy[::-1]
 print "-- GPS:", location_gps[::-1]
-
-# TODO fix plotting to use a coordinate mapping function
-# TODO one func t odo solution? learn params only once...
  
 # plot/save result
 zt_io.plot_joint(probs, location_idx)
-#zt_io.plot_joint(probs_xy, location_idx)
 zt_io.plot_gmap(grad_desc_gps, gate, spree, sattelite)
 
 
