@@ -55,8 +55,8 @@ def index2xy(index, res):
     """
     From indices in the *res*x*res* space, project to (x,y) coordinates 
     """
-    p_x = X_MIN + (index[1] / float(res)) * (X_MAX - X_MIN)
-    p_y = Y_MIN + (index[0] / float(res)) * (Y_MAX - Y_MIN)
+    p_x = X_MIN + (index[0] / float(res)) * (X_MAX - X_MIN)
+    p_y = Y_MIN + (index[1] / float(res)) * (Y_MAX - Y_MIN)
     return [p_x, p_y]
 
 def xy2gps(points):
