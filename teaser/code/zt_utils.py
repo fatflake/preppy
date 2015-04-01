@@ -243,7 +243,7 @@ def point_grad(eval_pt, nearest_pt):
 
 
 def neg_joint_log_prob(eval_pt):
-    print 'OBJ":',eval_pt
+    # print 'OBJ":',eval_pt
     x, y = eval_pt[0], eval_pt[1]
     sigma_spree = compute_gauss_sigma(SIG2_SPREE, CONFIDENCE)
     sigma_satt = compute_gauss_sigma(SIG2_SATT, CONFIDENCE)
@@ -304,7 +304,7 @@ def compute_grad_ass():
     random_y = np.random.random_sample()*(Y_MAX-Y_MIN) + Y_MIN
     init_pt = np.array([random_x, random_y]) 
     print "init_pt", init_pt
-    opt_result = optimize.minimize(neg_joint_log_prob, init_pt, jac=neg_joint_log_grad, method='BFGS')
+    opt_result = optimize.minimize(neg_joint_log_prob, init_pt, jac=neg_joint_log_grad, method='BFGS', options={'disp':False})
     # need t ogive f(x) AND f'(x) as args
     max_pt = opt_result.x
     return max_pt
